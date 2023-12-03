@@ -14,9 +14,12 @@ RUN pip3 install -r requirements.txt
 EXPOSE 5000
 # default port for flask is 5000, flask will listen on this port
 #ENTRYPOINT ["/PeopleSuite/bin/gunicorn", "-b", "0.0.0.0:5000", "app:app" ]
-ENTRYPOINT ["gunicorn", "-b", "0.0.0.0:5000", "src.app:app" ]
+ENTRYPOINT ["gunicorn", "-b", "0.0.0.0:5000", "src.EmployeeService:app" ]
+#path:flask_app_name
 
 # entrypoint is for starting the app in the container
 # 0.0.0.0 is proper name for localhost
 #host 0.0.0.0 port 5000 is the entry point to access our container (which holds our pod/replicas, which hold our app)
 # entrpoint is runtime, everything else is build-time
+
+#Dockerfile defines container image, which can be run by docker or k8
