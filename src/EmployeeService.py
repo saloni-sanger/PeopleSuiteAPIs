@@ -12,7 +12,7 @@ app.config ['SQLALCHEMY_DATABASE_URI'] = 'mysql://{}:{}@mysql:3306/peoplesuite'.
 db = SQLAlchemy(app) #db is a client instance configured from the mysql service
 #constructed using flask app so it can 'deeply integrate' with it
 class Employee(db.Model): #employee class will inherit db.Model's methods (db.Model is parent class, employee is child class)
-   __tablename__ = "Employee Table"
+   __tablename__ = "Employees"
    id = db.Column('employee_id', db.Integer, primary_key = True)
    first = db.Column('first_name', db.String(50))
    last = db.Column('last_name', db.String(50))
