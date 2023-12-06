@@ -34,10 +34,24 @@ def emp_health():
    return "healthy"
 
 @app.route('/employees', methods = ['GET', 'POST']) #specifying methods means other requests get ignored
-def list():
+def table():
    if request.method == 'GET' :
-      return "NYI", 501
-      #return
+      result = []
+      EMPLOYEES = db.session.query(Employee).all()
+      #query = SQLAlchemy.select('Employees')
+      #EMPLOYEES = db.execute(query).fetchall()
+      for employee in EMPLOYEES :
+         emp = dict( #ordering is not insertion order (aplhabertical)
+            EmployeeID = employee.id,
+            FirstName = employee.first,
+            LastName = employee.last,
+            EmailAddress = employee.email,
+            Country = employee.country,
+         )
+         result.append(emp)
+      return result, 200 #OK, request has succeeded
+      #return list of each employee information in JSON
+      #return list of dictionaries
    if request.method == 'POST' :
       #parse json to add employee to the table
       #use the json sent in create object and put it in db
@@ -62,7 +76,7 @@ def list():
          FirstName = created_object.first,
          LastName = created_object.last,
          EmailAddress = created_object.email,
-         Country = created_object.country,
+         Country = created_object.country
       )
       #If you return a Python dictionary in a Flask view, the dictionary will automatically be converted to the JSON format for the response. (sentry.io)
       return result, 201 #successful creation
@@ -70,8 +84,17 @@ def list():
       #return
 
 @app.route('/employees/<employee_id>', methods = ['GET'])
-def person(employee_id):
-   return "NYI", 501
+def get(employee_id):
+   emp = db.session.query(Employee).filter(Employee.id==employee_id).first()
+   if emp is None :
+      return "Employee ID doesn't exist", 400 #bad request
+   return dict(
+         EmployeeID = emp.id,
+         FirstName = emp.first,
+         LastName = emp.last,
+         EmailAddress = emp.email,
+         Country = emp.country,
+   ), 200 #successful get
    #only one method, so do ur get here
 
 #i have code to build a docker image (Dockerfile)
