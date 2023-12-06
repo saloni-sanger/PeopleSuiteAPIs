@@ -1,30 +1,35 @@
 from flask import Flask, request
 import uuid
 from cassandra.cqlengine import columns
-from cassandra.cqlengine import connection
-from cassandra.cqlengine.management import sync_table
+from cassandra.cqlengine import connection 
+from cassandra.cqlengine.management import sync_table, create_keyspace_simple
 from cassandra.cqlengine.models import Model
 from iso3166 import countries
 
 app = Flask(__name__)
 
-connection.setup(['cassandra:9042'], "cqlengine", protocol_version=3)
+app.config['CASSANDRA_SETUP_KWARGS'] = {'port': 9042}
+connection.setup(['cassandra'], "cqlengine", protocol_version=3) #try 127.0.0.1 instead of cass, is localhost
+create_keyspace_simple('cqlengine', 1)
 
 #constructed using flask app so it can 'deeply integrate' with it
 class Employee(Model): #employee class will inherit db.Model's methods (db.Model is parent class, employee is child class)
    __tablename__ = "Employees"
    id = columns.UUID(primary_key = True, default=uuid.uuid4)
-   first = columns.Text()
-   last = columns.Text()
-   email = columns.Text()  
-   country = columns.Text()
+   first = columns.Text(index = True)
+   last = columns.Text(index = True)
+   email = columns.Text(index = True)  
+   country = columns.Text(index = True)
    # run validation on country code to make sure it's one of them (use library) when you get a POST, send error code if not
 
 sync_table(Employee)
 
-@app.route('/employees/health')
-def emp_health():
-   return "healthy"
+@app.route('/employees/deleteall')
+def delete():
+   EMPLOYEES = Employee.objects()
+   for employee in EMPLOYEES :
+        Employee.delete(employee)
+   return "deleted", 200
 
 @app.route('/employees', methods = ['GET', 'POST']) #specifying methods means other requests get ignored
 def table():
@@ -33,11 +38,11 @@ def table():
       EMPLOYEES = Employee.objects()
       for employee in EMPLOYEES :
          emp = dict( #ordering is not insertion order (aplhabertical)
-            EmployeeID = employee.EmployeeID,
-            FirstName = employee.FirstName,
-            LastName = employee.LastName,
-            EmailAddress = employee.EmailAddress,
-            Country = employee.Country,
+            EmployeeID = employee.id,
+            FirstName = employee.first,
+            LastName = employee.last,
+            EmailAddress = employee.email,
+            Country = employee.country,
          )
          result.append(emp)
       return result, 200 #OK, request has succeeded
@@ -55,17 +60,17 @@ def table():
       
       first, last, email, country = content['First Name'], content['Last Name'], content['Email Address'], content['Country']
       #create() inserts into the table too, returns the instance created (no clear error return tho, so double check)
-      emp = Employee.create(FirstName = first, LastName = last, EmailAddress = email, Country = country)
-      created_object = Employee.objects(FirstName = first, LastName = last, EmailAddress = email, Country = country)
-      #print(created_object) #test
-      if created_object is None :
+      emp = Employee.create(first = first, last = last, email = email, country = country)
+      try:
+         created_object = Employee.get(id = emp.id)
+      except:
          return 'Failed to create object', 500 #internal server error
       result = dict( #ordering is not insertion order (aplhabertical)
-         EmployeeID = created_object.EmployeeID,
-         FirstName = created_object.FirstName,
-         LastName = created_object.LastName,
-         EmailAddress = created_object.EmailAddress,
-         Country = created_object.Country
+         EmployeeID = created_object.id,
+         FirstName = created_object.first,
+         LastName = created_object.last,
+         EmailAddress = created_object.email,
+         Country = created_object.country
       )
       #If you return a Python dictionary in a Flask view, the dictionary will automatically be converted to the JSON format for the response. (sentry.io)
       return result, 201 #successful creation
@@ -74,9 +79,10 @@ def table():
 
 @app.route('/employees/<employee_id>', methods = ['GET'])
 def get(employee_id):
-   emp = Employee.objects(EmployeeID = employee_id)
-   if emp is None :
-      return "Employee ID doesn't exist", 400 #bad request
+   try: 
+      emp = Employee.get(id = employee_id)
+   except:
+      return "Employee ID doesn't exist", 404 #The requested resource was not found
    return dict(
          EmployeeID = emp.id,
          FirstName = emp.first,
