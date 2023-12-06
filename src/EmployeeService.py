@@ -87,7 +87,7 @@ def table():
 def get(employee_id):
    emp = db.session.query(Employee).filter(Employee.id==employee_id).first()
    if emp is None :
-      return "Employee ID doesn't exist", 400 #bad request
+      return "Employee ID doesn't exist", 404 #The requested resource was not found
    return dict(
          EmployeeID = emp.id,
          FirstName = emp.first,
