@@ -10,3 +10,5 @@ spec:
   - port: 9042
   selector:
     app: cassandra
+
+    #if pod is pending, delete mysql pvc then pv's and re-deploy
