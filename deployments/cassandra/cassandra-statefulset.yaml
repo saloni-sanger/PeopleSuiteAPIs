@@ -64,14 +64,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
-        #readinessProbe:
-        #  exec:
-        #    command:
-        #    - /bin/bash
-        #    - -c
-        #    - /ready-probe.sh
-        #  initialDelaySeconds: 15
-        #  timeoutSeconds: 5
         # These volume mounts are persistent. They are like inline claims,
         # but not exactly because the names need to match exactly one of
         # the stateful pod volumes.
@@ -91,13 +83,6 @@ spec:
         requests:
           storage: 512M
 ---
-#kind: StorageClass
-#apiVersion: storage.k8s.io/v1
-#metadata:
-#  name: fast
-#provisioner: k8s.io/minikube-hostpath
-#parameters:
-#  type: pd-ssd
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:

@@ -1,3 +1,4 @@
+#Note: if service pod is pending, delete mysql pvc then mysql pv's and re-deploy cassandra-service
 apiVersion: v1
 kind: Service
 metadata:
@@ -10,5 +11,3 @@ spec:
   - port: 9042
   selector:
     app: cassandra
-
-    #if pod is pending, delete mysql pvc then pv's and re-deploy

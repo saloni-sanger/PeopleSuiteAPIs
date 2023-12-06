@@ -5,22 +5,22 @@ import os
 
 app = Flask(__name__)
 
-app.config ['SQLALCHEMY_DATABASE_URI'] = 'mysql://{}:{}@mysql:3306/peoplesuite'.format(os.environ.get('DB_USER'), os.environ.get('DB_PASS')) 
 #mysql protocol, mysql service on port 3306
-# mysql protocol to server at mysql (service name), will ask k8 DNS for IP of mysql (the service), then connect to IP it gets back on port 3308 (our service's IP port)
+app.config ['SQLALCHEMY_DATABASE_URI'] = 'mysql://{}:{}@mysql:3306/peoplesuite'.format(os.environ.get('DB_USER'), os.environ.get('DB_PASS')) 
 
-db = SQLAlchemy(app) #db is a client instance configured from the mysql service
-#constructed using flask app so it can 'deeply integrate' with it
-class Employee(db.Model): #employee class will inherit db.Model's methods (db.Model is parent class, employee is child class)
+#db is a client instance configured from the mysql service
+db = SQLAlchemy(app) 
+
+#Employee class will inherit db.Model's methods (db.Model is parent class, Employee is child class)
+class Employee(db.Model): 
    __tablename__ = "Employees"
    id = db.Column('employee_id', db.Integer, primary_key = True)
    first = db.Column('first_name', db.String(50))
    last = db.Column('last_name', db.String(50))
    email = db.Column('email_address', db.String(100))  
    country = db.Column('country', db.String(2))
-   # run validation on country code to make sure it's one of them (use library) when you get a POST, send error code if not
 
-   def __init__(self, first, last, email, country): #constructor for SQLAlchemy or me, used for add
+   def __init__(self, first, last, email, country): 
       self.first = first
       self.last = last
       self.email = email
@@ -29,19 +29,20 @@ class Employee(db.Model): #employee class will inherit db.Model's methods (db.Mo
 with app.app_context():
    db.create_all()
 
+#test directory
 @app.route('/employees/health')
 def emp_health():
    return "healthy"
 
-@app.route('/employees', methods = ['GET', 'POST']) #specifying methods means other requests get ignored
+#specifying methods means other requests get ignored
+@app.route('/employees', methods = ['GET', 'POST']) 
 def table():
    if request.method == 'GET' :
       result = []
       EMPLOYEES = db.session.query(Employee).all()
-      #query = SQLAlchemy.select('Employees')
-      #EMPLOYEES = db.execute(query).fetchall()
       for employee in EMPLOYEES :
-         emp = dict( #ordering is not insertion order (aplhabertical)
+         #ordering is not insertion order (aplhabertical)
+         emp = dict( 
             EmployeeID = employee.id,
             FirstName = employee.first,
             LastName = employee.last,
@@ -49,29 +50,35 @@ def table():
             Country = employee.country,
          )
          result.append(emp)
-      return result, 200 #OK, request has succeeded
-      #return list of each employee information in JSON
-      #return list of dictionaries
+      #OK, request has succeeded
+      return result, 200 
+   #use the json sent in create Employee object and put it in the DB
    if request.method == 'POST' :
-      #parse json to add employee to the table
-      #use the json sent in create object and put it in db
+      #parse json to get Employee information
       if not request.is_json :
-         return 'request body must contain JSON', 400 #request is not json, send bad request error
+         #request is not json, send bad request error
+         return 'request body must contain JSON', 400 
 
-      content = request.get_json() #parses incoming JSON request data and returns i8t as a python dictionary
-      if countries.get(content['Country']) == None :#check if country is in ISO-3166 library
-         return 'Country code must be in ISO-3166 format', 400 #request is bad
+      #parses incoming JSON request data and returns it as a python dictionary
+      content = request.get_json() 
+      #check if country is in ISO-3166 library
+      if countries.get(content['Country']) == None :
+         #bad request
+         return 'Country code must be in ISO-3166 format', 400 
       
       first, last, email, country = content['First Name'], content['Last Name'], content['Email Address'], content['Country']
       emp = Employee(first, last, email, country)
-      db.session.add(emp)#add does not take what __init__ takes, it takes an instance of a class extending db.Model
+      #add() does not take what __init__ takes, it takes an instance of a class extending db.Model
       #it will 'ask' the object its type and fields and figure out what to do
+      db.session.add(emp)
       db.session.commit()
-      created_object = Employee.query.filter_by(first = first, last = last, email = email, country = country).first() #no gaurantee it's the same obj, no duplication control/avoidance
-      #print(created_object) #test
+      #no duplication control/avoidance
+      created_object = Employee.query.filter_by(first = first, last = last, email = email, country = country).first() 
       if created_object is None :
-         return 'Failed to create object', 500 #internal server error
-      result = dict( #ordering is not insertion order (aplhabertical)
+         #internal server error
+         return 'Failed to create object', 500 
+      #ordering is not insertion order (alphabertical)
+      result = dict( 
          EmployeeID = created_object.id,
          FirstName = created_object.first,
          LastName = created_object.last,
@@ -79,15 +86,15 @@ def table():
          Country = created_object.country
       )
       #If you return a Python dictionary in a Flask view, the dictionary will automatically be converted to the JSON format for the response. (sentry.io)
-      return result, 201 #successful creation
-      #create json to send back (say the content type is json)
-      #return
+      #successful creation
+      return result, 201 
 
 @app.route('/employees/<employee_id>', methods = ['GET'])
 def get(employee_id):
    emp = db.session.query(Employee).filter(Employee.id==employee_id).first()
    if emp is None :
-      return "Employee ID doesn't exist", 404 #The requested resource was not found
+      #The requested resource was not found
+      return "Employee ID doesn't exist", 404 
    return dict(
          EmployeeID = emp.id,
          FirstName = emp.first,
@@ -95,9 +102,3 @@ def get(employee_id):
          EmailAddress = emp.email,
          Country = emp.country,
    ), 200 #successful get
-   #only one method, so do ur get here
-
-#i have code to build a docker image (Dockerfile)
-#to run in k8, 
-#k8 is gonna run the image the Dockerfile makes
-#k8 will use a yaml deployment

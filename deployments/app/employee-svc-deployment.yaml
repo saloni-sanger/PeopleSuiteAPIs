@@ -7,18 +7,21 @@ metadata:
 spec:
   ports:
   - port: 5000
+  #selector chooses the pods
   selector:
     app: employee-svc
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  #Deployment name doesn't matter, pods are attached to service based on "matchLabels"
   name: employee-svc
 spec:
   selector:
     matchLabels:
       app: employee-svc
   replicas: 1
+  #template describes how pods are created
   template:
     metadata:
       labels:
@@ -27,25 +30,28 @@ spec:
       containers:
       - image: salsanger/peoplesuite_apis:0.0.1
         name: employee-svc
-        imagePullPolicy: Always #download image fresh for every deployment
+        #download image fresh for every deployment
+        imagePullPolicy: Always 
         ports:
         - containerPort: 5000
           name: employee-svc
         env:
-          # Use secret in real usage
+          #use secret in real usage
         - name: DB_USER
           value: root
         - name: DB_PASS
           value: password
 ---
+#container and pods created by yaml, but they aren't exposed
+#ingress needed to expose service:
+  #An API object that manages external access to the services in a cluster, typically HTTP. (kubernetes.io)
+  #Ingress may provide load balancing, SSL termination and name-based virtual hosting (kubernetes.io)
+#service (prob pod-scope) and ingress (prob cluster-scope) independantly do their own kind of load balancing
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: employee-ingr
-  # annotations:
-    # nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  #ingressClassName: nginx-ingr
   ingressClassName: nginx
   rules:
   - host: localhost
@@ -58,24 +64,3 @@ spec:
             name: employee-svc
             port:
               number: 5000
-
-#selector chooses the pods, template describes how the pods are created
-#env 
-#doesn't matter what you call the deployment, it's looking for matchLabels
-#k8 manifest: describes application
-#yaml, deployment
-
-#service already connected to deployment (right now, the yaml created the container/pods for us, but it's not exposed)
-#needs an ingress to expose service
-#An API object that manages external access to the services in a cluster, typically HTTP. (kubernetes.io)
-#Ingress may provide load balancing, SSL termination and name-based virtual hosting (kubernetes.io)
-#service (prob pod-scope) and ingress (prob cluster-scope) independantly do their own kind of load balancing
-
-#rewrite target in the ingress annotation: changing the path comiung in to a different one (that's used internally)
-#matching a path to a service
-
-#now i need to work with the python file and add paths to the ingress !!!!!!!!!!!!!!!!!
-
-#make a script 
-
-#will need a 2nd dockerfile later to build departmentService
