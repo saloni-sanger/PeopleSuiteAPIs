@@ -60,11 +60,16 @@ def table():
          return 'request body must contain JSON', 400 
 
       #parses incoming JSON request data and returns it as a python dictionary
-      content = request.get_json() 
+      try:
+         content = request.get_json() 
+      except:
+         return 'request body must contain JSON', 400
+      
       #check if country is in ISO-3166 library
-      if countries.get(content['Country']) == None :
-         #bad request
-         return 'Country code must be in ISO-3166 format', 400 
+      try:
+         countries.get(content['Country'])
+      except:
+         return 'Country code must be in ISO-3166 format', 400    
       
       first, last, email, country = content['First Name'], content['Last Name'], content['Email Address'], content['Country']
       emp = Employee(first, last, email, country)

@@ -51,16 +51,16 @@ def table():
    #use the json sent in to create Employee object and put it in the DB
    if request.method == 'POST' :
       #parse json to add employee to the table
-      if not request.is_json :
-         #request is not json, send bad request error
-         return 'request body must contain JSON', 400 
+      try:
+         content = request.get_json() 
+      except:
+         return 'request body must contain JSON', 400
       
-      #parses incoming JSON request data and returns the data as a python dictionary
-      content = request.get_json() 
       #check if country is in ISO-3166 library
-      if countries.get(content['Country']) == None :
-         #request is bad
-         return 'Country code must be in ISO-3166 format', 400 
+      try:
+         countries.get(content['Country'])
+      except:
+         return 'Country code must be in ISO-3166 format', 400     
       
       first, last, email, country = content['First Name'], content['Last Name'], content['Email Address'], content['Country']
       #create() inserts into the table too, returns the instance created (no clear error return tho, so double check insertion)
